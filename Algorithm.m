@@ -69,9 +69,9 @@ function output = EAMC(input, B)
                 end
             end
         end
-        %count the population size
+        %count the population size, 0也是种群之一
         tempSize = 1;
-        for i = 1:n+1
+        for i = 2:n+1
             if Xfitness(i, 3) > 0:
                 if Yfitness(i, 3)>0 and xysame(i)==1
                     tempSize = tempSize+1;
@@ -88,6 +88,44 @@ function output = EAMC(input, B)
                 end
             end
         end
+        if popSize ~= tempSize
+            population = zeros(tempSize, n);
+        end
+        popSize = tempSize;
+        j = 2;
+        %融合X，Y，Z，W
+        for i = 2:n+1
+            if Xfitness(i, 3) > 0
+                if Yfitness(i, 3) > 0 and xysame(i) == 1
+                    population(j, :) = X(i, :);
+                    j = j+1;
+                end
+                if Yfitness(o, 3) > 0 and xysame(i) == 0
+                    population(j, :) = X(i, :);
+                    j = j+1;
+                    population(j, :) = Y(i, :):
+                    j = j+1;
+                end
+                if Yfitness(i, 3) > 0
+                    population(j, :) = X(i, :);
+                end
+            else
+                if Yfitness(i, 3) > 0:
+                    population(j, :) = Y(i, :);
+                    j = j+1;
+                end
+            end
+        end
+        t = t+1;
+    resultIndex = -1;
+    maxValue = -inf;
+    for p = 1:n+1
+        if Yfitness(p, 2) <= B and Yfitness(p, 1) > maxValue
+            maxValue = Yfitness(p, 1);
+            resultIndex = p;
+        end
+    end
+    Yfitness(resultIndex, :), popSize
     end
 end
 
