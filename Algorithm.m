@@ -1,7 +1,22 @@
 %covariance matrix
-global CM;
+warning off;
+slist = dir('E:\KangLi\HOPC Matlab Code\HOPC Matlab Code\sHOPC3Dfeatures\*.mat');
+tlist = dir('E:\KangLi\HOPC Matlab Code\HOPC Matlab Code\tHOPC3Dfeatures\*.mat');
 
-FeatureSet = [];
+for i = 1:length(tlist)
+    filename = [slist(i).folder, '\', slist(i).name];
+    sfeature = load(filename);
+    sf = reshape(sfeature.Q, [], 30);
+    filename = [tlist(i).folder, '\', tlist(i).name];
+    tfeature = load(filename);
+    tf = reshape(tfeature.Q, [], 30);
+    
+    t1 = sum((sf - tf).^2, 2);
+    t2 = sum(sf + tf, 2) + 1e-5;
+    t3 = t1./t2;
+    
+    STK = EAMC(t3, 200);
+end
 function output = EAMC(input, B)
 %myFun - Description
 %
