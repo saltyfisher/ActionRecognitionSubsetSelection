@@ -1,8 +1,12 @@
 %covariance matrix
+clear;
 warning off;
-slist = dir('E:\KangLi\HOPC Matlab Code\HOPC Matlab Code\sHOPC3Dfeatures\*.mat');
-tlist = dir('E:\KangLi\HOPC Matlab Code\HOPC Matlab Code\tHOPC3Dfeatures\*.mat');
+slist = dir('E:\KangLi\HOPC Matlab Code\HOPC Matlab Code\sHOPC3Dfeatures\a01*.mat');
+tlist = dir('E:\KangLi\HOPC Matlab Code\HOPC Matlab Code\tHOPC3Dfeatures\a01*.mat');
 
+global CM;
+CM = [];
+vlist = cell(1, length(slist));
 for i = 1:length(tlist)
     filename = [slist(i).folder, '\', slist(i).name];
     sfeature = load(filename);
@@ -13,10 +17,35 @@ for i = 1:length(tlist)
     
     t1 = sum((sf - tf).^2, 2);
     t2 = sum(sf + tf, 2) + 1e-5;
-    t3 = t1./t2;
+    t3 = t1./t2 - 1;
     
-    STK = EAMC(t3, 200);
+    t = t3(t3>1);
+    vlist(i) = {t};
+%     clear t1 t2 t3 sf tf;
+%     STK = EAMC(t, 200);
 end
+for i = 1:length(tlist)
+    filename = [slist(i).folder, '\', slist(i).name];
+    sfeature = load(filename);
+    sf = reshape(sfeature.Q, [], 30);
+    filename = [tlist(i).folder, '\', tlist(i).name];
+    tfeature = load(filename);
+    tf = reshape(tfeature.Q, [], 30);
+    
+    t1 = sum((sf - tf).^2, 2);
+    t2 = sum(sf + tf, 2) + 1e-5;
+    t3 = t1./t2 - 1;
+    
+    t = t3(t3>1);
+    clear t1 t2 t3 sf tf;
+    STK = EAMC(t, 200);
+end
+%%归一化长度
+function output = Truncating(x)
+    l = cellfun(@(x)(length(x)), vlist, 'un', 1);
+    
+end
+%%EAMC
 function output = EAMC(input, B)
 %myFun - Description
 %
@@ -25,15 +54,19 @@ function output = EAMC(input, B)
 % Long description
 %%初始化参数
     n = length(input);
-    X=zeros(n+1, n);Y=zeros(n+1, n);Z=zeros(n+1, n);W=zeros(n+1, n);    
-    population = zeros(1, n);
+    X=zeros(n+1, n);Y=zeros(n+1, n);
+    %Z=zeros(n+1, n);W=zeros(n+1, n);    
+    population = zeros(1, n, 'int8');
     %f(x), c(x), |x|, g(x)
-    Xfitness=zeros(n+1, 4);Yfitness=zeros(n+1, 4);Zfitness=zeros(n+1, 4);Wfitness=zeros(n+1, 4);
-    Wfitness(:, 2) = inf;
+    Xfitness=zeros(n+1, 4);Yfitness=zeros(n+1, 4);
+    %Zfitness=zeros(n+1, 4);Wfitness=zeros(n+1, 4);
+    %Wfitness(:, 2) = inf;
     %f(x), c(x), |x|, g(x)
     offSpringFit = zeros(1, 4);
-    xysame=zeros(1, n+1);zwsame=zeros(1, n+1);
-    xysame(1) = 1;zwsame(1) = 1;
+    xysame=zeros(1, n+1, 'int8');
+    %zwsame=zeros(1, n+1);
+    xysame(1) = 1;
+    %zwsame(1) = 1;
     popSize = 1;t = 0;iter1 = 1;
     T = ceil(n*n*10);kn = n*n;
 %%迭代更新种群
@@ -43,7 +76,7 @@ function output = EAMC(input, B)
             resultIndex = -1;
             maxValue = -inf;
             for p=1:n+1
-                if Yfitness(p, 2)<=B and Yfitness(p, 1)>maxValue
+                if Yfitness(p, 2)<=B && Yfitness(p, 1)>maxValue
                     maxValue = Yfitness(p, 1);
                     resultIndex = p;
                 end
@@ -87,11 +120,11 @@ function output = EAMC(input, B)
         %count the population size, 0也是种群之一
         tempSize = 1;
         for i = 2:n+1
-            if Xfitness(i, 3) > 0:
-                if Yfitness(i, 3)>0 and xysame(i)==1
+            if Xfitness(i, 3) > 0
+                if Yfitness(i, 3)>0 && xysame(i)==1
                     tempSize = tempSize+1;
                 end
-                if Yfitness(i, 3)>0 and xysame(i)==0
+                if Yfitness(i, 3)>0 && xysame(i)==0
                     tempSize = tempSize+2;
                 end
                 if Yfitness(i, 3) == 0
@@ -111,21 +144,21 @@ function output = EAMC(input, B)
         %融合X，Y，Z，W
         for i = 2:n+1
             if Xfitness(i, 3) > 0
-                if Yfitness(i, 3) > 0 and xysame(i) == 1
+                if Yfitness(i, 3) > 0 && xysame(i) == 1
                     population(j, :) = X(i, :);
                     j = j+1;
                 end
-                if Yfitness(o, 3) > 0 and xysame(i) == 0
+                if Yfitness(o, 3) > 0 && xysame(i) == 0
                     population(j, :) = X(i, :);
                     j = j+1;
-                    population(j, :) = Y(i, :):
+                    population(j, :) = Y(i, :);
                     j = j+1;
                 end
                 if Yfitness(i, 3) > 0
                     population(j, :) = X(i, :);
                 end
             else
-                if Yfitness(i, 3) > 0:
+                if Yfitness(i, 3) > 0
                     population(j, :) = Y(i, :);
                     j = j+1;
                 end
@@ -135,7 +168,7 @@ function output = EAMC(input, B)
     resultIndex = -1;
     maxValue = -inf;
     for p = 1:n+1
-        if Yfitness(p, 2) <= B and Yfitness(p, 1) > maxValue
+        if Yfitness(p, 2) <= B && Yfitness(p, 1) > maxValue
             maxValue = Yfitness(p, 1);
             resultIndex = p;
         end
@@ -143,14 +176,14 @@ function output = EAMC(input, B)
     Yfitness(resultIndex, :), popSize
     end
 end
-
+%%变异操作
 function Y = mutation(X)
     n = length(X);
     rand_rate = 1.0 / n;
-    change = binornd(1, rand_rate, 1, n);
+    change = int8(binornd(1, rand_rate, 1, n));
     Y = abs(X-change);
 end
-
+%%目标函数值
 function Y = FS(offspring, input)
 %FS - Description
 %value of objective function
@@ -178,7 +211,7 @@ function Y = FS(offspring, input)
 
     Y = SPH+USPH;
 end
-
+%%约束值
 function Y = CS(offspring, input)
 %CS - Description
 %value of cost function
@@ -190,7 +223,7 @@ function Y = CS(offspring, input)
 
     Y = sum(SPFeature);
 end
-
+%%代理函数值
 function Y = GS(B, alpha, offSpringFit, input)
 %GS - Description
 %value of surrogate function
