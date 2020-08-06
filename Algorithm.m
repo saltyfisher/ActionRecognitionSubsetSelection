@@ -170,7 +170,6 @@ function Y = FS(offspring, fsinput, validpos)
     nums = sum(selectedPoint);
     sameIndex = [];
     count = [];
-    tempSum = 0.0;
     if nums > 0
         for i = 1:frms
             a = fsinput(validpos(selectedPoint));
@@ -191,20 +190,19 @@ function Y = FS(offspring, fsinput, validpos)
     end
     for i = 1:length(count)
         prob = 1.0*count(i)/frms;
-        tempSum = tempSum - prob*log2(prob);
+        Y = Y - prob*log2(prob);
     end
 end
 
-function Y = CS(offspring, input)
+function Y = CS(offspring, csinput, validpos)
 %CS - Description
 %value of cost function
 % SynYutpCSmXCS)
 %
 % Long descrivalue of cost functionption
-    SPFeature = input(logical(offspring));
-    SPFeature(SPFeature<0) = 0;
+    selectedPoint = csinput(validpos);
+    Y = sum(selectedPoint);
 
-    Y = sum(SPFeature);
 end
 
 function Y = GS(B, alpha, offSpringFit, input)
