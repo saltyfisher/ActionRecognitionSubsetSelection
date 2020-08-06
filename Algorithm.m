@@ -158,25 +158,34 @@ function Y = FS(offspring, input)
 % Long description
     %SelectedPointFeature
     %CM Covariance Matrix
-    SPFeature = logical(offspring);
-    SPCM = CM(SPFeature, :);
-    SPCM = SPCM(:, SPFeature);
-    %UnselectedPointFeature
-    USPFeature = ~logical(offspring);
-    USPCM = CM(USPFeature, :);
-    USPCM = USPCM(:, USPFeature);
-
-    %Entropy
-    [n, attrNum] = size(input);
-    SPH = mvnpdf(input, zeros(1, sum(offspring)), SPCM);
-    USPH = mvnpdf(input, zeros(1, n-sum(offspring)), USPCM);
-    % VH = mvnpdf(input, zeros(1, n), CM);
-    % // TODO: »á±¬ÄÚ´æ
-    SPH = sum(SPH.*log(SPH));
-    USPH = sum(USPH.*log(USPH));
-    % VH = sum(VH.*log(VH));
-
-    Y = SPH+USPH;
+    [pos, frms] = size(input);
+    selectedPoint = logical(offspring);
+    nums = sum(selectedPoint);
+    sameIndex = [];
+    count = [];
+    tempSum = 0.0;
+    if nums > 0
+        for i = 1:frms
+            a = input(selectedPoint, i);
+            hasSame = false;
+            j = 0;
+            for k = 1:length(sameIndex)
+                if sum(a == input(selectedPoint, sameIndex(k))) == length
+                    count(j) = count(j)+1;
+                    hasSame = true;
+                end
+                j = j+1;
+            end
+            if hasSame == false
+                sameIndex = [sameIndex, i];
+                count = [count, 1];
+            end
+        end
+    end
+    for i = 1:length(count)
+        prob = 1.0*count(i)/frms;
+        tempSum = tempSum - prob*log2(prob);
+    end
 end
 
 function Y = CS(offspring, input)
