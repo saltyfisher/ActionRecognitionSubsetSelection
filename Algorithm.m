@@ -15,25 +15,32 @@ for i = 1:length(tlist)
     t2 = sum(sf + tf, 2) + 1e-5;
     t3 = t1./t2;
     
-    STK = EAMC(t3, 200);
+    STK = EAMC(t3, sf, 200);
 end
-function output = EAMC(input, B)
+function output = EAMC(fsinput, csinput, B)
 %myFun - Description
 %
 % Syntax: output = EAMC(input)
 %
 % Long description
 %%初始化参数
-    n = length(input);
-    X=zeros(n+1, n);Y=zeros(n+1, n);Z=zeros(n+1, n);W=zeros(n+1, n);    
+    g = 10;
+    validpos = find(csinput>g);
+
+    n = length(validpos);
+    X=zeros(n+1, n);Y=zeros(n+1, n);
+    %Z=zeros(n+1, n);W=zeros(n+1, n);    
     population = zeros(1, n);
     %f(x), c(x), |x|, g(x)
-    Xfitness=zeros(n+1, 4);Yfitness=zeros(n+1, 4);Zfitness=zeros(n+1, 4);Wfitness=zeros(n+1, 4);
-    Wfitness(:, 2) = inf;
+    Xfitness=zeros(n+1, 4);Yfitness=zeros(n+1, 4);
+    %Zfitness=zeros(n+1, 4);Wfitness=zeros(n+1, 4);
+    %Wfitness(:, 2) = inf;
     %f(x), c(x), |x|, g(x)
     offSpringFit = zeros(1, 4);
-    xysame=zeros(1, n+1);zwsame=zeros(1, n+1);
-    xysame(1) = 1;zwsame(1) = 1;
+    xysame=zeros(1, n+1);
+    %zwsame=zeros(1, n+1);
+    xysame(1) = 1;
+    %zwsame(1) = 1;
     popSize = 1;t = 0;iter1 = 1;
     T = ceil(n*n*10);kn = n*n;
 %%迭代更新种群
@@ -43,7 +50,7 @@ function output = EAMC(input, B)
             resultIndex = -1;
             maxValue = -inf;
             for p=1:n+1
-                if Yfitness(p, 2)<=B and Yfitness(p, 1)>maxValue
+                if Yfitness(p, 2)<=B && Yfitness(p, 1)>maxValue
                     maxValue = Yfitness(p, 1);
                     resultIndex = p;
                 end
@@ -53,10 +60,10 @@ function output = EAMC(input, B)
         iter1 = iter1 + 1;
         s = population(randi(popSize), :);
         offSpring = mutation(s);    
-        offSpringFit(1, 1) = FS(offSpring, input);
-        offSpringFit(1, 2) = CS(offSpring, input);
+        offSpringFit(1, 1) = FS(offSpring, fsinput, validpos);
+        offSpringFit(1, 2) = CS(offSpring, csinput, validpos);
         offSpringFit(1, 3) = sum(offSpring(1, :));
-        offSpringFit(1, 4) = GS(B, 1.0, offSpringFit, input);
+        offSpringFit(1, 4) = GS(B, 1.0, offSpringFit, fsinput, validpos);
         %indice 记录上一次生成的种群
         indice = int(offSpringFit(1, 3));
         if offSpringFit(1, 3) < 1
@@ -88,10 +95,10 @@ function output = EAMC(input, B)
         tempSize = 1;
         for i = 2:n+1
             if Xfitness(i, 3) > 0:
-                if Yfitness(i, 3)>0 and xysame(i)==1
+                if Yfitness(i, 3)>0 && xysame(i)==1
                     tempSize = tempSize+1;
                 end
-                if Yfitness(i, 3)>0 and xysame(i)==0
+                if Yfitness(i, 3)>0 && xysame(i)==0
                     tempSize = tempSize+2;
                 end
                 if Yfitness(i, 3) == 0
@@ -111,14 +118,14 @@ function output = EAMC(input, B)
         %融合X，Y，Z，W
         for i = 2:n+1
             if Xfitness(i, 3) > 0
-                if Yfitness(i, 3) > 0 and xysame(i) == 1
+                if Yfitness(i, 3) > 0 && xysame(i) == 1
                     population(j, :) = X(i, :);
                     j = j+1;
                 end
-                if Yfitness(o, 3) > 0 and xysame(i) == 0
+                if Yfitness(o, 3) > 0 && xysame(i) == 0
                     population(j, :) = X(i, :);
                     j = j+1;
-                    population(j, :) = Y(i, :):
+                    population(j, :) = Y(i, :)
                     j = j+1;
                 end
                 if Yfitness(i, 3) > 0
@@ -151,14 +158,14 @@ function Y = mutation(X)
     Y = abs(X-change);
 end
 
-function Y = FS(offspring, input)
+function Y = FS(offspring, fsinput, validpos)
 %FS - Description
 %value of objective function
 % Syntax: Y = FS(X)
 % Long description
     %SelectedPointFeature
     %CM Covariance Matrix
-    [pos, frms] = size(input);
+    [~, frms] = size(input);
     selectedPoint = logical(offspring);
     nums = sum(selectedPoint);
     sameIndex = [];
@@ -166,11 +173,11 @@ function Y = FS(offspring, input)
     tempSum = 0.0;
     if nums > 0
         for i = 1:frms
-            a = input(selectedPoint, i);
+            a = fsinput(validpos(selectedPoint));
             hasSame = false;
             j = 0;
             for k = 1:length(sameIndex)
-                if sum(a == input(selectedPoint, sameIndex(k))) == length
+                if sum(a == fsinput(validpos(selectedPoint), sameIndex(k))) == length
                     count(j) = count(j)+1;
                     hasSame = true;
                 end
